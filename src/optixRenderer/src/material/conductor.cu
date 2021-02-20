@@ -26,6 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 #include <optix.h>
 #include <optixu/optixu_math_namespace.h>
 #include "helpers.h"
@@ -33,60 +34,83 @@
 #include "random.h"
 #include "commonStructs.h"
 #include "lightStructs.h"
-#include <vector>
+#include <vector> 
 
-using namespace optix;
+using namespace optix; 
 
-rtDeclareVariable( float3, shading_normal, attribute shading_normal, ); 
-rtDeclareVariable( float3, geometric_normal, attribute geometric_normal, );
+rtDeclareVariable(float3, shading_normal, attribute shading_normal, ); 
+rtDeclareVariable(float3, geometric_normal, attribute geometric_normal, );
 rtDeclareVariable(float3, tangent_direction, attribute tangent_direction, );
 rtDeclareVariable(float3, bitangent_direction, attribute bitangent_direction, );
+
 rtDeclareVariable( float3, texcoord, attribute texcoord, );
+rtDeclareVariable( float, t_hit, rtIntersectionDistance, );
+
 rtDeclareVariable(optix::Ray, ray,   rtCurrentRay, );
 rtDeclareVariable(PerRayData_radiance, prd_radiance, rtPayload, );
 rtDeclareVariable(PerRayData_shadow,   prd_shadow, rtPayload, );
+rtDeclareVariable(float, scene_epsilon, , );
 
-rtDeclareVariable( float, uvScale, , ); 
+// Normal 
 rtTextureSampler<float4, 2> normalMap;
-rtDeclareVariable(int, isNormalTexture, , );
-rtDeclareVariable(float, F0, , );
+rtDeclareVariable( int, isNormalTexture, , );
 
-rtDeclareVariable( float3, cameraU, , );
-rtDeclareVariable( float3, cameraV, , );
-rtDeclareVariable( float3, cameraW, , );
+// Material 
+rtDeclareVariable(float3, specular, , );
+
+// Geometry Group
+rtDeclareVariable( rtObject, top_object, , );
+
+// Computing the pdfSolidAngle of BRDF giving a direction 
+RT_CALLABLE_PROGRAM float pdf(const float3& L, const float3& V, const float3& N)
+{
+    return 0.0f;
+}
+
+RT_CALLABLE_PROGRAM float3 evaluate(const float3& N, const float3& V, const float3& L, const float3& radiance)
+{   
+    return make_float3(0.0f);
+}
+ 
+RT_CALLABLE_PROGRAM void sample(unsigned& seed, 
+        float3 N, const float3& V, 
+        float3& attenuation, float3& direction, float& pdfSolid)
+{
+    pdfSolid = -1;
+    direction = reflect(-V, N);   
+    attenuation = attenuation * specular;
+}
+
 
 RT_PROGRAM void closest_hit_radiance()
 {
     const float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
     const float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
-    float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
-    
-    float3 V = normalize(-ray.direction );    
-    
-    if(dot(ffnormal, V) < 0)
-        ffnormal = -ffnormal;
 
+    float3 V = normalize(-ray.direction );
+    
     float3 N;
     if( isNormalTexture == 0){
-        N = ffnormal;
+        N = world_shading_normal;
     }
     else{
-        N = make_float3(tex2D(normalMap, texcoord.x * uvScale, texcoord.y * uvScale) );
+        N = make_float3(tex2D(normalMap, texcoord.x, texcoord.y) );
         N = normalize(2 * N - 1);
         N = N.x * tangent_direction 
             + N.y * bitangent_direction 
-            + N.z * ffnormal; 
+            + N.z * world_shading_normal;
     }
     N = normalize(N );
+    
+    float3 hitPoint = ray.origin + t_hit * ray.direction;
+    prd_radiance.origin = hitPoint;
 
 
-    float3 Z = normalize(-cameraW);
-    float3 X = normalize(cameraU);
-    float3 Y = normalize(cameraV);
-    N = make_float3( dot(N, X), dot(N, Y), dot(N, Z) );
-
-    prd_radiance.radiance = 0.5 * (N + 1);
-    prd_radiance.done = true;
+    // Finish updating the ray
+    sample(prd_radiance.seed,
+            N, V,
+            prd_radiance.attenuation, prd_radiance.direction, prd_radiance.pdf 
+            );
 }
 
 // any_hit_shadow program for every material include the lighting should be the same

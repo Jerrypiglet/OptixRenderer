@@ -1,5 +1,9 @@
 # OptixRenderer
-An optix GPU based path tracer. 
+An optix GPU based path tracer. This is the renderer built and used in the following 2 projects:
+* Li, Z., Shafiei, M., Ramamoorthi, R., Sunkavalli, K., & Chandraker, M. (2020). Inverse rendering for complex indoor scenes: Shape, spatially-varying lighting and svbrdf from a single image. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 2475-2484).
+* Li, Z.\*, Yeh, Y. Y.\*, & Chandraker, M. (2020). Through the Looking Glass: Neural 3D Reconstruction of Transparent Shapes. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 1262-1271).
+
+Please contact [Zhengqin Li](https://sites.google.com/a/eng.ucsd.edu/zhengqinli) about any questions with regard to the renderer. Please consider citing the 2 papers if you find the renderer useful in your own project. 
 
 ## Dependencies and compiling the code
 The requirements are almost the same as [optix_advanced_samples](https://github.com/nvpro-samples/optix_advanced_samples). 
@@ -100,6 +104,7 @@ The renderer currently supports three kinds of materials: `diffuse`, `phong` and
 * `phong`: The parameters include `diffuseReflectance`, `specularReflectance`, `alpha` and `normal`. The type of `diffuseReflectance` and `specularReflectance` can be `rgb` or `texture`. The type of `alpha` can be `float` or `texture`. 
 * `microfacet`: The parameters include `albedo`, `normal`, `roughness`, `metallic` and `fresnel`. The type of `albedo` can be `rgb` or `texture`. The type of `roughness`, `metallic` and `fresnel` can be `texture` and `float`. 
 * `dielectric`: The parameters include `specularReflectance`, `specularTransmittance`, `normal`, `intIOR` and `extIOR`. The type of `specularReflectance` and `specularTransmittance` can only be `rgb`. The type of  `intIOR` and `extIOR` can only be `float`. 
+* `conductor`: The parameters include `specularReflectance`. The type of `specularReflectance` can only be `rgb`.
 
 Following is an example of `phong` material. Notice that the path to the texture should be absolute path. 
 ```
